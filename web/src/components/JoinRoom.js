@@ -21,17 +21,17 @@ function JoinRoom() {
 	useEffect(() => {
 		const token = localStorage.getItem("go-chat-token");
 
-		// if (token && (!ws.current || ws.current.readyState !== WebSocket.OPEN)) {
-		//     console.log("Token available. Attempting to reconnect...")
-		//     ws.current = new WebSocket(`${endpoint}/ws/chat?token=${token}`);
+		if (token && (!ws.current || ws.current.readyState !== WebSocket.OPEN)) {
+			console.log("Token available. Attempting to reconnect...")
+			ws.current = new WebSocket(`${endpoint}/ws/chat?token=${token}`);
 
-		//     ws.current.onopen = () => console.log("WebSocket reconnected");
+			ws.current.onopen = () => console.log("WebSocket reconnected");
 
-		//     ws.current.onerror = (error) => {
-		//       console.error("WebSocket error:", error);
-		//       navigate('/login'); // Redirect to login on error
-		//     };
-		// }
+			ws.current.onerror = (error) => {
+				console.error("WebSocket error:", error);
+				navigate('/login'); // Redirect to login on error
+			};
+		}
 
 		const handleMessage = (message) => {
 			console.log("Message received from server: ", message.data);
@@ -45,7 +45,7 @@ function JoinRoom() {
 			ws.current.addEventListener("message", handleMessage);
 		}
 
-		return () => {};
+		return () => { };
 	}, [ws, roomName, navigate]);
 
 	const handleJoin = (e) => {
@@ -54,20 +54,35 @@ function JoinRoom() {
 			setRoomJoiningErrorMessage("Why the hurry? Enter a room name first!");
 			return;
 		}
-		// const currentWebSocket = ws.current;
+		const currentWebSocket = ws.current;
 
-		// if (currentWebSocket && currentWebSocket.readyState === WebSocket.OPEN) {
-		// 	// currentWebSocket.send(JSON.stringify({ type: "join_room", room: roomName }));
-		// } else {
-		// 	console.error("WebSocket is not open. Attempting to reconnect...");
-		// 	const token = localStorage.getItem("token");
-		// 	let tok = 123;
-		// 	if (tok) {
-		// 		// ws.current = new WebSocket(`${endpoint}/ws/chat?token=${token}`);
-		// 	} else {
-		// 		navigate("/login");
-		// 	}
-		// }
+		if (currentWebSocket && currentWebSocket.readyState === WebSocket.OPEN) {
+			currentWebSocket.send(JSON.stringify({ type: "join_room", room: roomName }));
+		} else {
+			console.error("WebSocket is not open. Attempting to reconnect...");
+			const token = localStorage.getItem("go-chat-token");
+			if (token) {
+				console.log("Reconnecting with token...");
+				ws.current = new WebSocket(`${endpoint}/ws/chat?token=${token}`);
+
+				// Set up event handlers for the new connection
+				ws.current.onopen = () => {
+					console.log("WebSocket reconnected successfully");
+					// Try to join the room again after successful reconnection
+					setTimeout(() => {
+						ws.current.send(JSON.stringify({ type: "join_room", room: roomName }));
+					}, 500);
+				};
+
+				ws.current.onerror = (error) => {
+					console.error("WebSocket reconnection error:", error);
+					navigate("/login");
+				};
+			} else {
+				console.error("No authentication token found");
+				navigate("/login");
+			}
+		}
 	};
 
 	let errorMessageToDisplay = null;

@@ -12,22 +12,25 @@ function Login() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			// const response = await API.post('/api/auth/login', {
-			//     username,
-			//     password
-			// });
-			// if (response.data.error) {
-			//   console.log(response.data)
-			//   setErrorMessage(response.data.message || 'Signup failed, Please try again.');
-			//   return;
-			// }
+			const response = await API.post('/api/auth/login', {
+				username,
+				password
+			});
+			if (response.data.error) {
+				console.log(response.data)
+				setErrorMessage(response.data.message || 'Login failed, Please try again.');
+				return;
+			}
 
-			// localStorage.setItem('go-chat-token', response.data.token);
-			// localStorage.setItem('go-chat-userId', getUserIDFromToken(response.data.token));
+			console.log(response.data)
+
+			localStorage.setItem('go-chat-token', response.data.token);
+			localStorage.setItem('go-chat-userId', getUserIDFromToken(response.data.token));
 
 			navigate("/join");
 		} catch (error) {
 			console.error("Login failed", error);
+			setErrorMessage("Login failed. Please check your credentials and try again.");
 		}
 	};
 
